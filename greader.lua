@@ -2,7 +2,6 @@
 Based on https://github.com/ArchiveTeam/wget-lua-forum-scripts/blob/master/vbulletin.lua
 --]]
 
-
 read_file = function(file)
   local f = io.open(file)
   local data = f:read("*all")
@@ -25,7 +24,7 @@ end
 wget.callbacks.get_urls = function(file, url, is_css, iri)
   -- progress message
   url_count = url_count + 1
-  if url_count % 25 == 0 then
+  if url_count % 100 == 0 then
     print(" - Downloaded "..url_count.." URLs")
   end
 
