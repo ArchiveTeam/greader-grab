@@ -2,6 +2,7 @@
 Based on https://github.com/ArchiveTeam/wget-lua-forum-scripts/blob/master/vbulletin.lua
 --]]
 
+
 read_file = function(file)
   local f = io.open(file)
   local data = f:read("*all")
