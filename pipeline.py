@@ -47,7 +47,7 @@ class GetItemFromTracker(TrackerRequest):
 	def process_body(self, body, item):
 		data = json.loads(body)
 		if "item_name" in data:
-			all_data = item["item_name"] # format: 000000009|http://feedurl1/`http://feedurl2/`...
+			all_data = data["item_name"] # format: 000000009|http://feedurl1/`http://feedurl2/`...
 			item["user_agent"] = USER_AGENT
 			item["batch_id"], joined_urls = all_data.split("|", 1)
 			# Need to shorten item_name because all of the tasks expect it to be short
@@ -55,12 +55,14 @@ class GetItemFromTracker(TrackerRequest):
 			item["feed_urls"] = joined_urls.split("`")
 			item["greader_urls"] = list(
 				# TODO: is quote_plus the correct quoting function?  (Check which URI RFC Reader is using.)
-				"https://www.google.com/reader/api/0/stream/contents/feed/" + urllib.quote_plus(url)
+					"https://www.google.com/reader/api/0/stream/contents/feed/" +
+					urllib.quote_plus(url) +
+					"?r=n&n=1000&hl=en&likes=true&comments=true&client=ArchiveTeam"
 				for url in item["feed_urls"])
 			for (k,v) in data.iteritems():
 				item[k] = v
 			item.log_output("Received item '%s' with %d feeds from tracker\n" % (
-				data["batch_id"], len(data["feed_urls"])))
+				item["batch_id"], len(item["feed_urls"])))
 			self.complete_item(item)
 		else:
 			item.log_output("Tracker responded with empty response.\n")
