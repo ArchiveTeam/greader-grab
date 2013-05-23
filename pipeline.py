@@ -232,7 +232,7 @@ pipeline = Pipeline(
 	# warc_prefix is the first part of the warc filename
 	#
 	# this task will set item["item_dir"] and item["warc_file_base"]
-	PrepareDirectories(warc_prefix="posterous.com"),
+	PrepareDirectories(warc_prefix="greader"),
 
 	# execute Wget+Lua
 	#
@@ -247,24 +247,18 @@ pipeline = Pipeline(
 			   "--truncate-output",
 			   "-e", "robots=off",
 			   "--rotate-dns",
-			   "--recursive", "--level=inf",
-			   "--page-requisites",
-			   "--span-hosts",
-			   "--domains", ItemInterpolation("%(item_name)s,s3.amazonaws.com,files.posterous.com,getfile.posterous.com,getfile0.posterous.com,getfile1.posterous.com,getfile2.posterous.com,getfile3.posterous.com,getfile4.posterous.com,getfile5.posterous.com,getfile6.posterous.com,getfile7.posterous.com,getfile8.posterous.com,getfile9.posterous.com,getfile10.posterous.com"),
-			   "--reject-regex", r"\.com/login",
 			   "--timeout", "60",
 			   "--tries", "20",
 			   "--waitretry", "5",
-			   "--lua-script", "posterous.lua",
+			   "--lua-script", "greader.lua",
 			   "--warc-file", ItemInterpolation("%(item_dir)s/%(warc_file_base)s"),
 			   "--warc-header", "operator: Archive Team",
-			   "--warc-header", "posterous-dld-script-version: " + VERSION,
-			   "--warc-header", ItemInterpolation("posterous-user: %(item_name)s"),
+			   "--warc-header", "greader-dld-script-version: " + VERSION,
 			   ItemInterpolation("http://%(item_name)s/")
 			 ],
 			 max_tries = 2,
 			 # check this: which Wget exit codes count as a success?
-			 accept_on_exit_code = [ 0, 6, 8 ],
+			 accept_on_exit_code = [ 0, 8 ],
 			 ),
 
 	# this will set the item["stats"] string that is sent to the tracker (see below)
