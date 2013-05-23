@@ -11,6 +11,7 @@ import json
 import os.path
 import shutil
 import time
+import urllib
 
 from distutils.version import StrictVersion
 
@@ -46,9 +47,20 @@ class GetItemFromTracker(TrackerRequest):
 	def process_body(self, body, item):
 		data = json.loads(body)
 		if "item_name" in data:
+			all_data = item["item_name"] # format: 000000009|http://feedurl1/`http://feedurl2/`...
+			item["user_agent"] = USER_AGENT
+			item["batch_id"], joined_urls = all_data.split("|", 1)
+			# Need to shorten item_name because all of the tasks expect it to be short
+			item["item_name"] = item["batch_id"]
+			item["feed_urls"] = joined_urls.split("`")
+			item["greader_urls"] = list(
+				# TODO: is quote_plus the correct quoting function?  (Check which URI RFC Reader is using.)
+				"https://www.google.com/reader/api/0/stream/contents/feed/" + urllib.quote_plus(url)
+				for url in item["feed_urls"])
 			for (k,v) in data.iteritems():
 				item[k] = v
-			item.log_output("Received item '%s' from tracker\n" % item["item_name"])
+			item.log_output("Received item '%s' with %d feeds from tracker\n" % (
+				data["batch_id"], len(data["feed_urls"])))
 			self.complete_item(item)
 		else:
 			item.log_output("Tracker responded with empty response.\n")
@@ -165,15 +177,15 @@ class PrepareDirectories(SimpleTask):
 		self.warc_prefix = warc_prefix
 
 	def process(self, item):
-		item_name = item["item_name"]
-		dirname = "/".join((item["data_dir"], item_name))
+		dirname = "/".join((item["data_dir"], item["batch_id"]))
 
 		if os.path.isdir(dirname):
 			shutil.rmtree(dirname)
 		os.makedirs(dirname)
 
 		item["item_dir"] = dirname
-		item["warc_file_base"] = "%s-%s-%s" % (self.warc_prefix, item_name, time.strftime("%Y%m%d-%H%M%S"))
+		item["warc_file_base"] = "%s-%s-%s" % (
+			self.warc_prefix, item["batch_id"], time.strftime("%Y%m%d-%H%M%S"))
 
 		open("%(item_dir)s/%(warc_file_base)s.warc.gz" % item, "w").close()
 
@@ -211,8 +223,20 @@ href="http://tracker.archiveteam.org/greader/">Leaderboard</a></span></h2>
 )
 
 ###########################################################################
-# The ID of the tracker for this warrior (used in URLs below).
-TRACKER_ID = "greader"
+TRACKER_URL = "http://127.0.0.1:9292/greader"
+#TRACKER_URL = "http://tracker.archiveteam.org/greader"
+
+class ConcatenatedList(object):
+	"""
+	This exists because we need `seesaw.config.realize` to realize multiple URLs
+	at the end of our argument list.
+	"""
+	def __init__(self, one, two):
+		self.one = one
+		self.two = two
+
+	def realize(self, item):
+		return realize(self.one, item) + realize(self.two, item)
 
 
 ###########################################################################
@@ -228,8 +252,7 @@ pipeline = Pipeline(
 	#
 	# this task will wait for an item and sets item["item_name"] to the item name
 	# before finishing
-	GetItemFromTracker("http://127.0.0.1:9292/%s" % TRACKER_ID, downloader, VERSION),
-	#GetItemFromTracker("http://tracker.archiveteam.org/%s" % TRACKER_ID, downloader, VERSION),
+	GetItemFromTracker(TRACKER_URL, downloader, VERSION),
 
 	# create the directories and initialize the filenames (see above)
 	# warc_prefix is the first part of the warc filename
@@ -241,25 +264,28 @@ pipeline = Pipeline(
 	#
 	# the ItemInterpolation() objects are resolved during runtime
 	# (when there is an Item with values that can be added to the strings)
-	WgetDownload([
-			WGET_LUA,
-			"-U", ItemInterpolation("%(user_agent)s"),
-			"-nv",
-			"-o", ItemInterpolation("%(item_dir)s/wget.log"),
-			"--no-check-certificate",
-			"--output-document", ItemInterpolation("%(item_dir)s/wget.tmp"),
-			"--truncate-output",
-			"-e", "robots=off",
-			"--rotate-dns",
-			"--timeout", "60",
-			"--tries", "20",
-			"--waitretry", "5",
-			"--lua-script", "greader.lua",
-			"--warc-file", ItemInterpolation("%(item_dir)s/%(warc_file_base)s"),
-			"--warc-header", "operator: Archive Team",
-			"--warc-header", "greader-dld-script-version: " + VERSION,
-			ItemInterpolation("http://%(item_name)s/")
-		], max_tries=2, accept_on_exit_code=[0, 8], # which Wget exit codes count as a success?
+	WgetDownload(ConcatenatedList([
+				# TODO: cert-pin
+				WGET_LUA,
+				"-U", USER_AGENT,
+				"-nv",
+				"-o", ItemInterpolation("%(item_dir)s/wget.log"),
+				"--output-document", ItemInterpolation("%(item_dir)s/wget.tmp"),
+				"--truncate-output",
+				"-e", "robots=off",
+				"--rotate-dns",
+				"--timeout", "60",
+				"--tries", "20",
+				"--waitretry", "5",
+				"--lua-script", "greader.lua",
+				"--warc-file", ItemInterpolation("%(item_dir)s/%(warc_file_base)s"),
+				"--warc-header", "operator: Archive Team",
+				"--warc-header", "greader-dld-script-version: " + VERSION,
+			],
+			ItemValue("greader_urls")
+		),
+		max_tries=2,
+		accept_on_exit_code=[0, 8], # which Wget exit codes count as a success?
 	),
 
 	# this will set the item["stats"] string that is sent to the tracker (see below)
@@ -291,7 +317,7 @@ pipeline = Pipeline(
 		# this upload task asks the tracker for an upload target
 		# this can be HTTP or rsync and can be changed in the tracker admin panel
 		UploadWithTracker(
-			"http://tracker.archiveteam.org/%s" % TRACKER_ID,
+			TRACKER_URL,
 			downloader=downloader,
 			version=VERSION,
 			# list the files that should be uploaded.
@@ -314,7 +340,7 @@ pipeline = Pipeline(
 
 	# if the item passed every task, notify the tracker and report the statistics
 	SendDoneToTracker(
-		tracker_url="http://tracker.archiveteam.org/%s" % TRACKER_ID,
+		tracker_url=TRACKER_URL,
 		stats=ItemValue("stats")
 	)
 )
