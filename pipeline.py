@@ -46,7 +46,8 @@ class CustomGetItemFromTracker(TrackerRequest):
 		data = json.loads(body)
 		if "item_name" in data:
 			all_data = data["item_name"] # format: 000000009|http://feedurl1/`http://feedurl2/`...
-			item["user_agent"] = USER_AGENT
+			if not "user_agent" in item:
+				item["user_agent"] = USER_AGENT
 			item["batch_id"], joined_urls = all_data.split("|", 1)
 
 			# item_name is the full data and we don't want URL spew in the console
