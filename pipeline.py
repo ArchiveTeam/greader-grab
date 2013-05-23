@@ -30,11 +30,9 @@ from seesaw.tracker import TrackerRequest, UploadWithTracker, SendDoneToTracker,
 
 
 
-# new version of GetItemFromTracker,
-# this should be included in the seesaw code at some point
-class GetItemFromTracker(TrackerRequest):
+class CustomGetItemFromTracker(TrackerRequest):
 	def __init__(self, tracker_url, downloader, version = None):
-		TrackerRequest.__init__(self, "GetItemFromTracker", tracker_url, "request", may_be_canceled=True)
+		TrackerRequest.__init__(self, "CustomGetItemFromTracker", tracker_url, "request", may_be_canceled=True)
 		self.downloader = downloader
 		self.version = version
 
@@ -50,8 +48,10 @@ class GetItemFromTracker(TrackerRequest):
 			all_data = data["item_name"] # format: 000000009|http://feedurl1/`http://feedurl2/`...
 			item["user_agent"] = USER_AGENT
 			item["batch_id"], joined_urls = all_data.split("|", 1)
-			# Need to shorten item_name because all of the tasks expect it to be short
-			item["item_name"] = item["batch_id"]
+
+			# item_name is the full data and we don't want URL spew in the console
+			item.description = lambda: "Item %r" % (item["batch_id"],) # for most tasks
+
 			item["feed_urls"] = joined_urls.split("`")
 			item["greader_urls"] = list(
 				# TODO: is quote_plus the correct quoting function?  (Check which URI RFC Reader is using.)
@@ -61,14 +61,26 @@ class GetItemFromTracker(TrackerRequest):
 				for url in item["feed_urls"])
 			for (k,v) in data.iteritems():
 				item[k] = v
-			item.log_output("Received item '%s' with %d feeds from tracker\n" % (
-				item["batch_id"], len(item["feed_urls"])))
+			first_feed = item["feed_urls"][0] if item["feed_urls"] else None
+			item.log_output("Received item '%s' with %d feeds from tracker; first feed is %r\n" % (
+				item["batch_id"], len(item["feed_urls"]), first_feed))
 			self.complete_item(item)
 		else:
 			item.log_output("Tracker responded with empty response.\n")
 			self.schedule_retry(item)
 
 
+class CustomSendDoneToTracker(SendDoneToTracker):
+	"""
+	Calls .description() instead of grabbing item["item_name"], to avoid URL spew
+	"""
+	def process_body(self, body, item):
+		if body.strip()=="OK":
+			item.log_output("Tracker confirmed %s.\n" % item.description())
+			self.complete_item(item)
+		else:
+			item.log_output("Tracker responded with unexpected '%s'.\n" % body.strip())
+			self.schedule_retry(item)
 
 
 #---------------------------------------
@@ -254,7 +266,7 @@ pipeline = Pipeline(
 	#
 	# this task will wait for an item and sets item["item_name"] to the item name
 	# before finishing
-	GetItemFromTracker(TRACKER_URL, downloader, VERSION),
+	CustomGetItemFromTracker(TRACKER_URL, downloader, VERSION),
 
 	# create the directories and initialize the filenames (see above)
 	# warc_prefix is the first part of the warc filename
@@ -341,7 +353,7 @@ pipeline = Pipeline(
 	),
 
 	# if the item passed every task, notify the tracker and report the statistics
-	SendDoneToTracker(
+	CustomSendDoneToTracker(
 		tracker_url=TRACKER_URL,
 		stats=ItemValue("stats")
 	)
