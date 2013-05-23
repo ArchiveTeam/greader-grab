@@ -132,7 +132,7 @@ USER_AGENT = "Wget/1.14 ArchiveTeam"
 #
 # Update this each time you make a non-cosmetic change.
 # It will be added to the WARC files and reported to the tracker.
-VERSION = "20130507.01"
+VERSION = "20130523.01"
 
 
 ###########################################################################
