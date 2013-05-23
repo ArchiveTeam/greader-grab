@@ -6,14 +6,12 @@
 #
 # (or run   run-pipeline --help   for more details)
 #
-import functools
 import os
 import os.path
 import shutil
 import time
 
 from distutils.version import StrictVersion
-from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 
 # check the seesaw version before importing any other components
 import seesaw
