@@ -127,7 +127,7 @@ if not WGET_LUA:
 # The user agent for external requests.
 #
 # Use this constant in the Wget command line.
-USER_AGENT = "Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US) AppleWebKit/533.20.25 (KHTML, like Gecko) Version/5.0.4 Safari/533.20.27 ArchiveTeam"
+USER_AGENT = "Wget/1.14 ArchiveTeam"
 
 ###########################################################################
 # The version number of this pipeline definition.
