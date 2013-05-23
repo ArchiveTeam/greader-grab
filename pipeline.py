@@ -201,19 +201,17 @@ class MoveFiles(SimpleTask):
 # This will be shown in the warrior management panel. The logo should not
 # be too big. The deadline is optional.
 project = Project(
-	title = "Posterous",
+	title = "Google Reader",
 	project_html = """
-    <img class="project-logo" alt="Posterous Logo" src="http://archiveteam.org/images/6/6c/Posterous_logo.png" />
-    <h2>Posterous.com <span class="links"><a href="http://www.posterous.com/">Website</a> &middot; <a
-href="http://tracker.archiveteam.org/posterous/">Leaderboard</a></span></h2>
-    <p><i>Posterous</i> is closing April, 30th, 2013</p>
+    <h2>Google Reader <span class="links"><a href="http://www.google.com/reader/">Website</a> &middot; <a
+href="http://tracker.archiveteam.org/greader/">Leaderboard</a></span></h2>
+    <p><i>Google Reader</i> is closing July 1st, 2013</p>
   """
-	, utc_deadline = datetime.datetime(2013,04,30, 23,59,0)
 )
 
 ###########################################################################
 # The ID of the tracker for this warrior (used in URLs below).
-TRACKER_ID = "posterous"
+TRACKER_ID = "greader"
 
 
 ###########################################################################
@@ -229,7 +227,8 @@ pipeline = Pipeline(
 	#
 	# this task will wait for an item and sets item["item_name"] to the item name
 	# before finishing
-	GetItemFromTracker("http://tracker.archiveteam.org/%s" % TRACKER_ID, downloader, VERSION),
+	GetItemFromTracker("http://127.0.0.1:9292/%s" % TRACKER_ID, downloader, VERSION),
+	#GetItemFromTracker("http://tracker.archiveteam.org/%s" % TRACKER_ID, downloader, VERSION),
 
 	# create the directories and initialize the filenames (see above)
 	# warc_prefix is the first part of the warc filename
