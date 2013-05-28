@@ -28,14 +28,25 @@ from seesaw.pipeline import Pipeline
 from seesaw.externalprocess import WgetDownload
 from seesaw.tracker import TrackerRequest, UploadWithTracker, SendDoneToTracker, PrepareStatsForTracker
 
-"""
+r"""
 This pipeline relies on this code inserted into your universal-tracker redis database:
 
-# redis-cli
+$ redis-cli
 redis 127.0.0.1:6379> select 13
 OK
-redis 127.0.0.1:6379[13]> set greader:extra_parameters 'data["task_urls"] = ["http://127.0.0.1/", "http://127.0.0.2/"]; data["user_agent"] = "Wget/1.14 ArchiveTeam"; data["wget_timeout"] = "60"; data["wget_tries"] = "20"; data["wget_waitretry"] = "5";'
+redis 127.0.0.1:6379[13]> set greader:extra_parameters 'data["task_urls"] = (File.open("/home/greader-items/" + item[0...6] + "/" + item, "r") do |f| f.read end).split("\n").map {|encoded_url| "https://www.google.com/reader/api/0/stream/contents/feed/" + encoded_url + "?r=n&n=1000&hl=en&likes=true&comments=true&client=ArchiveTeam"}; data["user_agent"] = "Wget/1.14 ArchiveTeam"; data["wget_timeout"] = "60"; data["wget_tries"] = "20"; data["wget_waitretry"] = "5";'
 OK
+
+/home/greader-items/ (change the location) should have lists of
+urllib.quote_plus-encoded URLs with this directory layout:
+
+000000/0000000000
+000000/0000000001
+000000/0000000002
+...
+000001/0000010000
+000001/0000010001
+...
 """
 
 
