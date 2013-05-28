@@ -235,7 +235,10 @@ href="http://tracker.archiveteam.org/greader/">Leaderboard</a></span></h2>
 )
 
 ###########################################################################
-TRACKER_URL = "http://tracker.archiveteam.org/greader"
+try:
+	TRACKER_URL = os.environ["GREADER_TRACKER_URL"]
+except KeyError:
+	TRACKER_URL = "http://tracker.archiveteam.org/greader"
 
 
 ###########################################################################
