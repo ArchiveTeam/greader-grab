@@ -28,11 +28,20 @@ from seesaw.pipeline import Pipeline
 from seesaw.externalprocess import WgetDownload
 from seesaw.tracker import TrackerRequest, UploadWithTracker, SendDoneToTracker, PrepareStatsForTracker
 
+"""
+This pipeline relies on this code inserted into your universal-tracker redis database:
+
+# redis-cli
+redis 127.0.0.1:6379> select 13
+OK
+redis 127.0.0.1:6379[13]> set greader:extra_parameters 'data["task_urls"] = ["http://127.0.0.1/", "http://127.0.0.2/"]; data["user_agent"] = "Wget/1.14 ArchiveTeam"; data["wget_timeout"] = "60"; data["wget_tries"] = "20"; data["wget_waitretry"] = "5";'
+OK
+"""
 
 
-class CustomGetItemFromTracker(TrackerRequest):
+class GetItemFromTracker(TrackerRequest):
 	def __init__(self, tracker_url, downloader, version = None):
-		TrackerRequest.__init__(self, "CustomGetItemFromTracker", tracker_url, "request", may_be_canceled=True)
+		TrackerRequest.__init__(self, "GetItemFromTracker", tracker_url, "request", may_be_canceled=True)
 		self.downloader = downloader
 		self.version = version
 
@@ -45,43 +54,22 @@ class CustomGetItemFromTracker(TrackerRequest):
 	def process_body(self, body, item):
 		data = json.loads(body)
 		if "item_name" in data:
-			all_data = data["item_name"] # format: 000000009|http://feedurl1/`http://feedurl2/`...
-			if not "user_agent" in item:
-				item["user_agent"] = USER_AGENT
-			item["batch_id"], joined_urls = all_data.split("|", 1)
-
-			# item_name is the full data and we don't want URL spew in the console
-			item.description = lambda: "Item %r" % (item["batch_id"],) # for most tasks
-
-			item["feed_urls"] = joined_urls.split("`")
-			item["greader_urls"] = list(
-				# TODO: is quote_plus the correct quoting function?  (Check which URI RFC Reader is using.)
-					"https://www.google.com/reader/api/0/stream/contents/feed/" +
-					urllib.quote_plus(url) +
-					"?r=n&n=1000&hl=en&likes=true&comments=true&client=ArchiveTeam"
-				for url in item["feed_urls"])
 			for (k,v) in data.iteritems():
 				item[k] = v
-			first_feed = item["feed_urls"][0] if item["feed_urls"] else None
-			item.log_output("Received item '%s' with %d feeds from tracker; first feed is %r\n" % (
-				item["batch_id"], len(item["feed_urls"]), first_feed))
+			##print item
+			item.log_output("Received item '%s' from tracker with %d URLs; first URL is %r\n" % (
+				item["item_name"], len(item["task_urls"]), item["task_urls"][0]))
 			self.complete_item(item)
 		else:
 			item.log_output("Tracker responded with empty response.\n")
 			self.schedule_retry(item)
 
 
-class CustomSendDoneToTracker(SendDoneToTracker):
-	"""
-	Calls .description() instead of grabbing item["item_name"], to avoid URL spew
-	"""
-	def process_body(self, body, item):
-		if body.strip()=="OK":
-			item.log_output("Tracker confirmed %s.\n" % item.description())
-			self.complete_item(item)
-		else:
-			item.log_output("Tracker responded with unexpected '%s'.\n" % body.strip())
-			self.schedule_retry(item)
+# stdin_data_function added in seesaw 0.14
+class WgetDownloadWithStdin(WgetDownload):
+	def __init__(self, args, max_tries=1, accept_on_exit_code=[0], retry_on_exit_code=None, env=None, stdin_data_function=None):
+		super(WgetDownloadWithStdin, self).__init__(args, max_tries, accept_on_exit_code, retry_on_exit_code, env)
+		self.stdin_data_function = stdin_data_function
 
 
 #---------------------------------------
@@ -132,11 +120,10 @@ def find_executable(name, version, paths):
 # WGET_LUA will be set to the first path that
 # 1. does not crash with --version, and
 # 2. prints the required version string
-WGET_LUA = find_executable("Wget+Lua", [
-		"GNU Wget 1.14.lua.20130120-8476",
-		"GNU Wget 1.14.lua.20130407-1f1d",
-		"GNU Wget 1.14.lua.20130427-92d2"
-	], [
+WGET_LUA = find_executable(
+	"Wget+Lua",
+	["GNU Wget 1.14.lua.20130523-9a5c"],
+	[
 		"./wget-lua",
 		"./wget-lua-warrior",
 		"./wget-lua-local",
@@ -152,17 +139,11 @@ if not WGET_LUA:
 
 
 ###########################################################################
-# The user agent for external requests.
-#
-# Use this constant in the Wget command line.
-USER_AGENT = "Wget/1.14 ArchiveTeam"
-
-###########################################################################
 # The version number of this pipeline definition.
 #
 # Update this each time you make a non-cosmetic change.
 # It will be added to the WARC files and reported to the tracker.
-VERSION = "20130523.01"
+VERSION = "20130528.01"
 
 
 ###########################################################################
@@ -192,7 +173,7 @@ class PrepareDirectories(SimpleTask):
 		self.warc_prefix = warc_prefix
 
 	def process(self, item):
-		dirname = "/".join((item["data_dir"], item["batch_id"]))
+		dirname = "/".join((item["data_dir"], item["item_name"]))
 
 		if os.path.isdir(dirname):
 			shutil.rmtree(dirname)
@@ -200,7 +181,7 @@ class PrepareDirectories(SimpleTask):
 
 		item["item_dir"] = dirname
 		item["warc_file_base"] = "%s-%s-%s" % (
-			self.warc_prefix, item["batch_id"], time.strftime("%Y%m%d-%H%M%S"))
+			self.warc_prefix, item["item_name"], time.strftime("%Y%m%d-%H%M%S"))
 
 		open("%(item_dir)s/%(warc_file_base)s.warc.gz" % item, "w").close()
 
@@ -241,18 +222,6 @@ href="http://tracker.archiveteam.org/greader/">Leaderboard</a></span></h2>
 TRACKER_URL = "http://127.0.0.1:9292/greader"
 #TRACKER_URL = "http://tracker.archiveteam.org/greader"
 
-class ConcatenatedList(object):
-	"""
-	This exists because we need `seesaw.config.realize` to realize multiple URLs
-	at the end of our argument list.
-	"""
-	def __init__(self, one, two):
-		self.one = one
-		self.two = two
-
-	def realize(self, item):
-		return realize(self.one, item) + realize(self.two, item)
-
 
 ###########################################################################
 # The pipeline.
@@ -267,7 +236,7 @@ pipeline = Pipeline(
 	#
 	# this task will wait for an item and sets item["item_name"] to the item name
 	# before finishing
-	CustomGetItemFromTracker(TRACKER_URL, downloader, VERSION),
+	GetItemFromTracker(TRACKER_URL, downloader, VERSION),
 
 	# create the directories and initialize the filenames (see above)
 	# warc_prefix is the first part of the warc filename
@@ -279,28 +248,28 @@ pipeline = Pipeline(
 	#
 	# the ItemInterpolation() objects are resolved during runtime
 	# (when there is an Item with values that can be added to the strings)
-	WgetDownload(ConcatenatedList([
-				# TODO: cert-pin
-				WGET_LUA,
-				"-U", USER_AGENT,
-				"-nv",
-				"-o", ItemInterpolation("%(item_dir)s/wget.log"),
-				"--output-document", ItemInterpolation("%(item_dir)s/wget.tmp"),
-				"--truncate-output",
-				"-e", "robots=off",
-				"--rotate-dns",
-				"--timeout", "60",
-				"--tries", "20",
-				"--waitretry", "5",
-				"--lua-script", "greader.lua",
-				"--warc-file", ItemInterpolation("%(item_dir)s/%(warc_file_base)s"),
-				"--warc-header", "operator: Archive Team",
-				"--warc-header", "greader-dld-script-version: " + VERSION,
-			],
-			ItemValue("greader_urls")
-		),
+	WgetDownloadWithStdin([
+			# TODO: cert-pin
+			WGET_LUA,
+			"-U", ItemInterpolation("%(user_agent)s"),
+			"-nv",
+			"-o", ItemInterpolation("%(item_dir)s/wget.log"),
+			"--output-document", ItemInterpolation("%(item_dir)s/wget.tmp"),
+			"--truncate-output",
+			"-e", "robots=off",
+			"--rotate-dns",
+			"--timeout", ItemInterpolation("%(wget_timeout)s"),
+			"--tries", ItemInterpolation("%(wget_tries)s"),
+			"--waitretry", ItemInterpolation("%(wget_waitretry)s"),
+			"--lua-script", "greader.lua",
+			"--warc-file", ItemInterpolation("%(item_dir)s/%(warc_file_base)s"),
+			"--warc-header", "operator: Archive Team",
+			"--warc-header", "greader-dld-script-version: " + VERSION,
+			"--input", "-"
+		],
 		max_tries=2,
 		accept_on_exit_code=[0, 8], # which Wget exit codes count as a success?
+		stdin_data_function=(lambda item: "\n".join(u.encode("utf-8") for u in item["task_urls"]) + "\n"),
 	),
 
 	# this will set the item["stats"] string that is sent to the tracker (see below)
@@ -354,7 +323,7 @@ pipeline = Pipeline(
 	),
 
 	# if the item passed every task, notify the tracker and report the statistics
-	CustomSendDoneToTracker(
+	SendDoneToTracker(
 		tracker_url=TRACKER_URL,
 		stats=ItemValue("stats")
 	)
