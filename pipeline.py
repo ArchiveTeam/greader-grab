@@ -235,8 +235,7 @@ href="http://tracker.archiveteam.org/greader/">Leaderboard</a></span></h2>
 )
 
 ###########################################################################
-TRACKER_URL = "http://127.0.0.1:9292/greader"
-#TRACKER_URL = "http://tracker.archiveteam.org/greader"
+TRACKER_URL = "http://tracker.archiveteam.org/greader"
 
 
 ###########################################################################
