@@ -28,10 +28,22 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
     print(" - Downloaded "..url_count.." URLs")
   end
 
-  local continuation = json.decode(read_file(file))["continuation"]
+  local page = read_file(file)
+  if string.sub(page, 0, 1) ~= "{" then
+    -- page has no JSON (probably a 404 page)
+    return {}
+  end
+
+  local decoded, pos, error = json.decode(page)
+  if not decoded then
+    print("Could not decode JSON (unexpected!): " .. error)
+    return {}
+  end
+
+  local continuation = decoded["continuation"]
   if continuation then
     return {{url=url_with_continuation(url, continuation), link_expect_html=0}}
   end
-  
+
   return {}
 end
