@@ -14,7 +14,7 @@ This pipeline relies on this code inserted into your universal-tracker redis dat
 $ redis-cli
 redis 127.0.0.1:6379> select 13
 OK
-redis 127.0.0.1:6379[13]> set greader:extra_parameters 'data["task_urls"] = (File.open("/home/greader-items/" + item[0...6] + "/" + item, "r") do |f| f.read end).split("\n").map {|encoded_url| "https://www.google.com/reader/api/0/stream/contents/feed/" + encoded_url + "?r=n&n=1000&hl=en&likes=true&comments=true&client=ArchiveTeam"}; data["user_agent"] = "Wget/1.14 ArchiveTeam"; data["wget_timeout"] = "60"; data["wget_tries"] = "20"; data["wget_waitretry"] = "5";'
+redis 127.0.0.1:6379[13]> set greader:extra_parameters 'data["task_urls"] = (Zlib::GzipReader.open("/home/greader-items/" + item[0...6] + "/" + item + ".gz") do |gz| gz.read end).split("\n").map {|encoded_url| "https://www.google.com/reader/api/0/stream/contents/feed/" + encoded_url + "?r=n&n=1000&hl=en&likes=true&comments=true&client=ArchiveTeam"}; data["user_agent"] = "Wget/1.14 ArchiveTeam"; data["wget_timeout"] = "60"; data["wget_tries"] = "20"; data["wget_waitretry"] = "5";'
 OK
 
 /home/greader-items/ (change the location) should have lists of
