@@ -20,11 +20,11 @@ OK
 /home/greader-items/ (change the location) should have lists of
 urllib.quote_plus-encoded URLs with this directory layout:
 
-000000/0000000000
-000000/0000000001
+000000/0000000000.gz
+000000/0000000001.gz
 
 That is,
-[first 6 digits]/[all 10 digits]
+[first 6 digits]/[all 10 digits].gz
 ...
 """
 
