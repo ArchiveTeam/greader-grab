@@ -1,7 +1,8 @@
 greader-grab
 ============
 
-Seesaw script for archiveteam Google Reader grabbing.
+Seesaw script for archiveteam Google Reader grabbing: http://www.archiveteam.org/index.php?title=Google_Reader
+
 You'll find this project on the Archive Team Warrior (http://tracker.archiveteam.org/greader/).
 
 
@@ -18,7 +19,6 @@ To run this outside the warrior, clone this repository and run:
     git clone https://github.com/ArchiveTeam/greader-grab
     cd greader-grab
     ./get-wget-lua.sh
-    screen ~/.local/bin/run-pipeline --concurrent 2 pipeline.py YOURNICKNAME
 
 (CentOS / RHEL / Amazon Linux)
 
@@ -32,13 +32,12 @@ To run this outside the warrior, clone this repository and run:
     git clone https://github.com/ArchiveTeam/greader-grab
     cd greader-grab
     ./get-wget-lua.sh
-    screen ~/.local/bin/run-pipeline --concurrent 2 pipeline.py YOURNICKNAME
 
 then start downloading with:
 
-    screen ~/.local/bin/run-pipeline pipeline.py YOURNICKNAME
+    screen ~/.local/bin/run-pipeline --concurrent 2 pipeline.py YOURNICKNAME
 
 For more options, run:
 
-    run-pipeline --help
+     ~/.local/bin/run-pipeline --help
 
