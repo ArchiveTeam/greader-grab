@@ -5,6 +5,11 @@ Seesaw script for Archive Team's Google Reader grab: http://www.archiveteam.org/
 
 You'll find this project on the Archive Team Warrior (http://tracker.archiveteam.org/greader/).
 
+If you are not familiar with Archive Team grabs: this program repeatedly grabs a work item
+containing 200 feed URLs from the tracker, downloads them using Google Reader's
+anonymous API, then uploads the compressed archive (average ~5MB) to a collection
+server.  You do not need more than ~1GB of free disk space to run this job.
+
 
 Running without a warrior
 -------------------------
@@ -19,6 +24,9 @@ To run this outside the warrior:
     git clone https://github.com/ArchiveTeam/greader-grab
     cd greader-grab
     ./get-wget-lua.sh
+    
+    # Start downloading with:
+    screen ~/.local/bin/run-pipeline --concurrent 2 pipeline.py YOURNICKNAME
 
 (Debian 6)
 
@@ -34,6 +42,9 @@ To run this outside the warrior:
     cd greader-grab
     ./get-wget-lua.sh
 
+    # Start downloading with:
+    screen ~/.local/bin/run-pipeline --concurrent 2 pipeline.py YOURNICKNAME
+
 (CentOS / RHEL / Amazon Linux)
 
     sudo yum install lua lua-devel python-devel python-distribute git openssl-devel rsync gcc make screen
@@ -47,8 +58,7 @@ To run this outside the warrior:
     cd greader-grab
     ./get-wget-lua.sh
 
-then start downloading with:
-
+    # Start downloading with:
     screen ~/.local/bin/run-pipeline --concurrent 2 pipeline.py YOURNICKNAME
 
 For more options, run:
