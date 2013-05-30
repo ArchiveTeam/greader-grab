@@ -87,6 +87,12 @@ class WgetDownloadWithStdin(WgetDownload):
 		super(WgetDownloadWithStdin, self).__init__(args, max_tries, accept_on_exit_code, retry_on_exit_code, env)
 		self.stdin_data_function = stdin_data_function
 
+	def stdin_data(self, item):
+		if self.stdin_data_function:
+			return self.stdin_data_function(item)
+		else:
+			return ""
+
 
 #---------------------------------------
 # This is an updated version of test_executable.
