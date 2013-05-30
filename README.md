@@ -1,7 +1,7 @@
 greader-grab
 ============
 
-Seesaw script for archiveteam Google Reader grabbing: http://www.archiveteam.org/index.php?title=Google_Reader
+Seesaw script for Archive Team's Google Reader grab: http://www.archiveteam.org/index.php?title=Google_Reader
 
 You'll find this project on the Archive Team Warrior (http://tracker.archiveteam.org/greader/).
 
@@ -9,7 +9,7 @@ You'll find this project on the Archive Team Warrior (http://tracker.archiveteam
 Running without a warrior
 -------------------------
 
-To run this outside the warrior, clone this repository and run:
+To run this outside the warrior:
 
 (Ubuntu / Debian 7)
 
