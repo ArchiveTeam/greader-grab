@@ -63,5 +63,5 @@ To run this outside the warrior:
 
 For more options, run:
 
-     ~/.local/bin/run-pipeline --help
+    ~/.local/bin/run-pipeline --help
 
