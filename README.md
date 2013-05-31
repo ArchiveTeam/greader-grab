@@ -3,12 +3,14 @@ greader-grab
 
 Seesaw script for Archive Team's Google Reader grab: http://www.archiveteam.org/index.php?title=Google_Reader
 
-You'll find this project on the Archive Team Warrior (http://tracker.archiveteam.org/greader/).
+You'll find this project on the Archive Team Warrior: http://tracker.archiveteam.org/greader/
 
 If you are not familiar with Archive Team grabs: this program repeatedly grabs a work item
 containing 200 feed URLs from the tracker, downloads them using Google Reader's
 anonymous API, then uploads the compressed archive (average ~5MB) to a collection
 server.  You do not need more than ~1GB of free disk space to run this job.
+
+The IRC channel for this grab is #donereading on efnet.
 
 
 Running without a warrior
