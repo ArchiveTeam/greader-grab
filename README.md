@@ -1,69 +1,54 @@
 greader-grab
 ============
 
-Seesaw script for Archive Team's Google Reader grab: http://www.archiveteam.org/index.php?title=Google_Reader
+Seesaw script for Archive Team's [Google Reader project](http://www.archiveteam.org/index.php?title=Google_Reader).
 
-You'll find this project on the Archive Team Warrior: http://tracker.archiveteam.org/greader/
-
-If you are not familiar with Archive Team grabs: this program repeatedly grabs a work item
-containing 200 feed URLs from the tracker, downloads them using Google Reader's
-anonymous API, then uploads the compressed archive (average ~5MB) to a collection
-server.  You do not need more than ~2GB of free disk space to run this job.
-
-The IRC channel for this grab is #donereading on efnet.
+You'll find this project on the [Archive Team Warrior](http://tracker.archiveteam.org/greader/).
 
 
-Running without a warrior
+Use Without Warrior
 -------------------------
 
-To run this outside the warrior:
+### Install
 
-(Ubuntu / Debian 7)
+#### Ubuntu
 
-    sudo apt-get update
-    sudo apt-get install -y build-essential lua5.1 liblua5.1-0-dev python python-setuptools python-dev git-core openssl libssl-dev python-pip rsync gcc make git screen
-    pip install --user seesaw
-    git clone https://github.com/ArchiveTeam/greader-grab
-    cd greader-grab
-    ./get-wget-lua.sh
+Manually:
+
+    $ sudo apt-get update
+    $ sudo apt-get install -y build-essential lua5.1 liblua5.1-0-dev python python-setuptools python-dev git-core openssl libssl-dev python-pip rsync gcc make git screen
+    $ pip install --user seesaw
+    $ git clone https://github.com/ArchiveTeam/greader-grab
+    $ cd greader-grab
+    $ ./get-wget-lua.sh
     
-    # Start downloading with:
-    screen ~/.local/bin/run-pipeline --concurrent 3 pipeline.py YOURNICKNAME
+Automatically:
 
-(Debian 6)
+    $ wget -O - https://raw.github.com/ArchiveTeam/greader-grab/master/ubuntu-autoinstall.sh | bash
 
-    sudo apt-get update
-    sudo apt-get install -y build-essential lua5.1 liblua5.1-0-dev python python-setuptools python-dev git-core openssl libssl-dev python-pip rsync gcc make git screen
-    wget --no-check-certificate https://pypi.python.org/packages/source/p/pip/pip-1.3.1.tar.gz
-    tar -xzvf pip-1.3.1.tar.gz
-    cd pip-1.3.1
-    python setup.py install --user
-    cd ..
-    ~/.local/bin/pip install --user seesaw
-    git clone https://github.com/ArchiveTeam/greader-grab
-    cd greader-grab
-    ./get-wget-lua.sh
+#### CentOS / RHEL / Amazon Linux
 
-    # Start downloading with:
-    screen ~/.local/bin/run-pipeline --concurrent 3 pipeline.py YOURNICKNAME
+Manually:
 
-(CentOS / RHEL / Amazon Linux)
+    $ sudo yum install lua lua-devel python-devel python-distribute git openssl-devel rsync gcc make screen
+    $ wget https://pypi.python.org/packages/source/p/pip/pip-1.3.1.tar.gz
+    $ tar -xzvf pip-1.3.tar.gz
+    $ cd pip-1.3
+    $ python setup.py install --user
+    $ cd ..
+    $ ~/.local/bin/pip install --user seesaw
+    $ git clone https://github.com/ArchiveTeam/greader-grab
+    $ cd greader-grab
+    $ ./get-wget-lua.sh
+    
+Automatically:
 
-    sudo yum install lua lua-devel python-devel python-distribute git openssl-devel rsync gcc make screen
-    wget https://pypi.python.org/packages/source/p/pip/pip-1.3.1.tar.gz
-    tar -xzvf pip-1.3.1.tar.gz
-    cd pip-1.3.1
-    python setup.py install --user
-    cd ..
-    ~/.local/bin/pip install --user seesaw
-    git clone https://github.com/ArchiveTeam/greader-grab
-    cd greader-grab
-    ./get-wget-lua.sh
+    $ wget -O - https://github.com/ArchiveTeam/greader-grab/raw/master/autoinstall-other.sh | bash
 
-    # Start downloading with:
-    screen ~/.local/bin/run-pipeline --concurrent 3 pipeline.py YOURNICKNAME
+### Start Downloading
 
-For more options, run:
+    $ screen ~/.local/bin/run-pipeline --concurrent 2 pipeline.py YOURNICKNAME
 
-    ~/.local/bin/run-pipeline --help
+### More Options
 
+     $ ~/.local/bin/run-pipeline --help
