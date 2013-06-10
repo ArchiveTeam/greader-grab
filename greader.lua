@@ -26,6 +26,10 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
     print(" - Downloaded "..url_count.." URLs")
   end
 
+  if not file then
+    return {}
+  end
+
   -- Read 32KB in case the feed has a really long title
   local page = read_file(file, 32768) -- returns nil if file is empty
   if not page or string.sub(page, 0, 1) ~= "{" then
