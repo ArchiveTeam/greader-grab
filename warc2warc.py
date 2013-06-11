@@ -1,5 +1,8 @@
 #!/usr/bin/env python
-"""warc2warc - convert one warc to another, can be used to re-compress things"""
+
+"""
+warc2warc - convert one warc to another, can be used to re-compress things
+"""
 
 import os
 import sys
@@ -57,6 +60,7 @@ def process(record, out, options):
 
 	record.write_to(out, gzip=options.gzip)
 
+
 def main(argv):
 	(options, input_files) = parser.parse_args(args=argv[1:])
 
@@ -74,12 +78,8 @@ def main(argv):
 
 			fh.close()
 
-
-
 	return 0
+
 
 if __name__ == '__main__':
 	sys.exit(main(sys.argv))
-
-
-
