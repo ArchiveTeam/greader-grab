@@ -19,7 +19,9 @@ ensure_safe_and_quote_shell_arg = function(arg)
 end
 
 read_gz_file = function(file, amount)
-  local p = io.popen("gunzip -c -- " .. ensure_safe_and_quote_shell_arg(file))
+  -- Need to redirect stderr to /dev/null to avoid getting "Broken pipe"
+  -- spew when we don't read the whole thing
+  local p = io.popen("gunzip -c -- " .. ensure_safe_and_quote_shell_arg(file) .. " 2> /dev/null")
   local data = p:read(amount)
   p:close()
   return data
