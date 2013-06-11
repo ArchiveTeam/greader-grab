@@ -14,18 +14,12 @@ This pipeline relies on this code inserted into your universal-tracker redis dat
 $ redis-cli
 redis 127.0.0.1:6379> select 13
 OK
-redis 127.0.0.1:6379[13]> set greader:extra_parameters 'data["task_urls"] = (Zlib::GzipReader.open("/home/greader-items/" + item[0...6] + "/" + item + ".gz") do |gz| gz.read end).split("\n").map {|encoded_url| "https://www.google.com/reader/api/0/stream/contents/feed/" + encoded_url + "?r=n&n=1000&hl=en&likes=true&comments=true&client=ArchiveTeam"}; data["user_agent"] = "Wget/1.14 ArchiveTeam"; data["wget_timeout"] = "60"; data["wget_tries"] = "20"; data["wget_waitretry"] = "5";'
+redis 127.0.0.1:6379[13]> set greader:extra_parameters 'data["task_urls_pattern"] = "https://www.google.com/reader/api/0/stream/contents/feed/%s?r=n&n=1000&hl=en&likes=true&comments=true&client=ArchiveTeam"; data["task_urls_url"] = "http://greader-items.dyn.ludios.net:32047/greader-items/" + item[0...6] + "/" + item + ".gz"; data["user_agent"] = "Wget/1.14 ArchiveTeam"; data["wget_timeout"] = "60"; data["wget_tries"] = "20"; data["wget_waitretry"] = "5";'
 OK
 
-/home/greader-items/ (change the location) should have lists of
-urllib.quote_plus-encoded URLs with this directory layout:
-
-000000/0000000000.gz
-000000/0000000001.gz
-
-That is,
-[first 6 digits]/[all 10 digits].gz
-...
+The HTTP response for task_urls_url should be a gzip-compressed
+newline-separated UTF-8 encoded list of URLs that need to interpolated
+into task_urls_pattern.
 """
 
 import os
@@ -33,7 +27,8 @@ import json
 import os.path
 import shutil
 import time
-import urllib
+import urllib2
+import zlib
 
 from distutils.version import StrictVersion
 
@@ -55,6 +50,10 @@ from seesaw.tracker import TrackerRequest, UploadWithTracker, SendDoneToTracker,
 SSL_CERT_DIR = os.path.join(os.getcwd(), "certs")
 
 
+def gunzip_string(s):
+	return zlib.decompress(s, 16 + zlib.MAX_WBITS)
+
+
 class GetItemFromTracker(TrackerRequest):
 	def __init__(self, tracker_url, downloader, version = None):
 		TrackerRequest.__init__(self, "GetItemFromTracker", tracker_url, "request", may_be_canceled=True)
@@ -73,6 +72,12 @@ class GetItemFromTracker(TrackerRequest):
 			for (k,v) in data.iteritems():
 				item[k] = v
 			##print item
+			if not "task_urls" in item:
+				# If no task_urls in item, we must get them from task_urls_url
+				pattern = item["task_urls_pattern"]
+				task_urls_data = urllib2.urlopen(item["task_urls_url"]).read()
+				item["task_urls"] = list(pattern % (u,) for u in gunzip_string(task_urls_data).rstrip('\n').decode('utf-8').split(u'\n'))
+
 			item.log_output("Received item '%s' from tracker with %d URLs; first URL is %r\n" % (
 				item["item_name"], len(item["task_urls"]), item["task_urls"][0]))
 			self.complete_item(item)
@@ -165,7 +170,7 @@ if not WGET_LUA:
 #
 # Update this each time you make a non-cosmetic change.
 # It will be added to the WARC files and reported to the tracker.
-VERSION = "20130610.02"
+VERSION = "20130611.01"
 
 
 ###########################################################################
