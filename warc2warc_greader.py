@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-warc2warc - convert one warc to another, can be used to re-compress things
+warc2warc_greader - convert one warc to another, can be used to re-compress things
 """
 
 import os
