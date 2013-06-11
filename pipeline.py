@@ -23,6 +23,7 @@ into task_urls_pattern.
 """
 
 import os
+import sys
 import json
 import os.path
 import shutil
@@ -42,12 +43,13 @@ from seesaw.config import NumberConfigValue, realize
 from seesaw.item import ItemInterpolation, ItemValue
 from seesaw.task import SimpleTask, LimitConcurrent
 from seesaw.pipeline import Pipeline
-from seesaw.externalprocess import WgetDownload
+from seesaw.externalprocess import ExternalProcess, WgetDownload
 from seesaw.tracker import TrackerRequest, UploadWithTracker, SendDoneToTracker, PrepareStatsForTracker
 
 # run-pipeline changes the cwd to the directory containing pipeline.py, then
 # execs the contents of pipeline.py.
-SSL_CERT_DIR = os.path.join(os.getcwd(), "certs")
+PIPELINE_DIR = os.getcwd()
+SSL_CERT_DIR = os.path.join(PIPELINE_DIR, "certs")
 
 
 def gunzip_string(s):
@@ -170,7 +172,7 @@ if not WGET_LUA:
 #
 # Update this each time you make a non-cosmetic change.
 # It will be added to the WARC files and reported to the tracker.
-VERSION = "20130611.02"
+VERSION = "20130611.03"
 
 
 ###########################################################################
@@ -228,6 +230,18 @@ class MoveFiles(SimpleTask):
 
 		shutil.rmtree("%(item_dir)s" % item)
 
+
+class CookWARC(ExternalProcess):
+	def __init__(self):
+		args = [
+			sys.executable,
+			os.path.join(PIPELINE_DIR, "warc2warc_greader.py"),
+			"--gzip",
+			"--decode_http",
+			"--output", ItemInterpolation("%(data_dir)s/%(warc_file_base)s.cooked.warc.gz"),
+			ItemInterpolation("%(data_dir)s/%(warc_file_base)s.warc.gz")
+		]
+		ExternalProcess.__init__(self, "CookWARC", args)
 
 
 
@@ -320,6 +334,11 @@ pipeline = Pipeline(
 	# item["item_dir"] to item["data_dir"]
 	MoveFiles(),
 
+	# create a .cooked.warc.gz based on the .warc.gz.  The cooked WARC has
+	# gunzipped HTTP responses.  Note that the .gz compression on the WARC
+	# itself remains.
+	CookWARC(),
+
 	# there can be multiple items in the pipeline, but this wrapper ensures
 	# that there is only one item uploading at a time
 	#
@@ -338,7 +357,7 @@ pipeline = Pipeline(
 			# this may include directory names.
 			# note: HTTP uploads will only upload the first file on this list
 			files=[
-				ItemInterpolation("%(data_dir)s/%(warc_file_base)s.warc.gz")
+				ItemInterpolation("%(data_dir)s/%(warc_file_base)s.cooked.warc.gz")
 			],
 			# the relative path for the rsync command
 			# (this defines if the files are uploaded to a subdirectory on the server)

@@ -1,1 +1,4 @@
 /wget-lua
+/STOP
+*.pyc
+/data

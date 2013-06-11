@@ -18,7 +18,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "warc-tools"))
 from hanzo.warctools import WarcRecord
 from hanzo.httptools import RequestMessage, ResponseMessage
 
-parser = OptionParser(usage="%prog [options] url (url ...)")
+parser = OptionParser(usage="%prog [options] input_file (input_file ...)")
 
 parser.add_option("-o", "--output", dest="output", help="output warc file")
 parser.add_option("-l", "--limit", dest="limit")
@@ -67,19 +67,19 @@ def process(record, out, options):
 def main(argv):
 	(options, input_files) = parser.parse_args(args=argv[1:])
 
-	out = sys.stdout
-	if len(input_files) < 1:
-		fh = WarcRecord.open_archive(file_handle=sys.stdin, gzip=None)
+	with open(options.output, "wb") as out:
+		if len(input_files) < 1:
+			fh = WarcRecord.open_archive(file_handle=sys.stdin, gzip=None)
 
-		for record in fh:
-			process(record, out, options)
-	else:
-		for name in input_files:
-			fh = WarcRecord.open_archive(name, gzip="auto")
 			for record in fh:
 				process(record, out, options)
+		else:
+			for name in input_files:
+				fh = WarcRecord.open_archive(name, gzip="auto")
+				for record in fh:
+					process(record, out, options)
 
-			fh.close()
+				fh.close()
 
 	return 0
 
