@@ -12,6 +12,9 @@ import os.path
 
 from optparse import OptionParser
 
+# hack hack hack
+sys.path.append(os.path.join(os.path.dirname(__file__), "warc-tools"))
+
 from hanzo.warctools import WarcRecord
 from hanzo.httptools import RequestMessage, ResponseMessage
 
