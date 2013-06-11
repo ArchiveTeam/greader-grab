@@ -14,7 +14,7 @@ This pipeline relies on this code inserted into your universal-tracker redis dat
 $ redis-cli
 redis 127.0.0.1:6379> select 13
 OK
-redis 127.0.0.1:6379[13]> set greader:extra_parameters 'data["task_urls_pattern"] = "https://www.google.com/reader/api/0/stream/contents/feed/%s?r=n&n=1000&hl=en&likes=true&comments=true&client=ArchiveTeam"; data["task_urls_url"] = "http://greader-items.dyn.ludios.net:32047/greader-items/" + item[0...6] + "/" + item + ".gz"; data["user_agent"] = "Wget/1.14 ArchiveTeam"; data["wget_timeout"] = "60"; data["wget_tries"] = "20"; data["wget_waitretry"] = "5";'
+redis 127.0.0.1:6379[13]> set greader:extra_parameters 'data["task_urls_pattern"] = "https://www.google.com/reader/api/0/stream/contents/feed/%s?r=n&n=1000&hl=en&likes=true&comments=true&client=ArchiveTeam"; data["task_urls_url"] = "http://greader-items.dyn.ludios.net:32047/greader-items/" + item[0...6] + "/" + item + ".gz"; data["user_agent"] = "Wget/1.14 gzip ArchiveTeam"; data["wget_timeout"] = "60"; data["wget_tries"] = "20"; data["wget_waitretry"] = "5";'
 OK
 
 The HTTP response for task_urls_url should be a gzip-compressed
@@ -170,7 +170,7 @@ if not WGET_LUA:
 #
 # Update this each time you make a non-cosmetic change.
 # It will be added to the WARC files and reported to the tracker.
-VERSION = "20130611.01"
+VERSION = "20130611.02"
 
 
 ###########################################################################
@@ -278,7 +278,6 @@ pipeline = Pipeline(
 	# the ItemInterpolation() objects are resolved during runtime
 	# (when there is an Item with values that can be added to the strings)
 	WgetDownloadWithStdin([
-			# TODO: cert-pin
 			WGET_LUA,
 			"-U", ItemInterpolation("%(user_agent)s"),
 			"-nv",
@@ -290,6 +289,7 @@ pipeline = Pipeline(
 			"--timeout", ItemInterpolation("%(wget_timeout)s"),
 			"--tries", ItemInterpolation("%(wget_tries)s"),
 			"--waitretry", ItemInterpolation("%(wget_waitretry)s"),
+			"--header", "Accept-Encoding: gzip",
 			"--lua-script", "greader.lua",
 			"--warc-file", ItemInterpolation("%(item_dir)s/%(warc_file_base)s"),
 			"--warc-header", "operator: Archive Team",

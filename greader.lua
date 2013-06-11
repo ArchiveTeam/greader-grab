@@ -9,6 +9,22 @@ read_file = function(file, amount)
   return data
 end
 
+-- Yes, really, lua does not come with an API to popen without a shell, or escape
+-- a shell argument.
+ensure_safe_and_quote_shell_arg = function(arg)
+  -- http://pubs.opengroup.org/onlinepubs/009695399/utilities/xcu_chap02.html
+  assert(string.find(arg, "[\\`$\"\'\n\r\t\b\f\v]") == nil, "Argument contains unsafe characters: " .. arg)
+  -- Must use single quote
+  return "'" .. arg .. "'"
+end
+
+read_gz_file = function(file, amount)
+  local p = io.popen("gunzip -c -- " .. ensure_safe_and_quote_shell_arg(file))
+  local data = p:read(amount)
+  p:close()
+  return data
+end
+
 url_count = 0
 
 url_with_continuation = function(url, continuation)
@@ -30,8 +46,22 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
     return {}
   end
 
+  local magic = read_file(file, 2) -- returns nil if file is empty
+  if not magic then
+    return {}
+  end
+
+  -- Support both gzip and uncompressed responses
   -- Read 32KB in case the feed has a really long title
-  local page = read_file(file, 32768) -- returns nil if file is empty
+  -- Magic bytes from http://www.gzip.org/zlib/rfc-gzip.html
+  -- Note that Lua escapes are decimal, not octal
+  local page
+  if magic == "\031\139" then
+    page = read_gz_file(file, 32768) -- returns nil if file is empty
+  else
+    page = read_file(file, 32768) -- returns nil if file is empty
+  end
+
   if not page or string.sub(page, 0, 1) ~= "{" then
     -- page has no JSON (probably a 404 page)
     return {}
