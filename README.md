@@ -3,7 +3,7 @@ greader-grab
 
 Seesaw script for Archive Team's Google Reader grab: http://www.archiveteam.org/index.php?title=Google_Reader
 
-You'll find this project on the Archive Team Warrior: http://tracker.archiveteam.org/greader/
+The dashboard for this grab is http://tracker-alt.dyn.ludios.net:9292/greader/
 
 If you are not familiar with Archive Team grabs: this program repeatedly grabs a work item
 containing 200 feed URLs from the tracker, downloads them using Google Reader's
