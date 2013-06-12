@@ -7,9 +7,6 @@ warc2warc_greader - convert one warc to another, can be used to re-compress thin
 import os
 import sys
 
-import sys
-import os.path
-
 from optparse import OptionParser
 
 # hack hack hack
@@ -26,6 +23,7 @@ parser.add_option("-I", "--input", dest="input_format", help="(ignored)")
 parser.add_option("-Z", "--gzip", dest="gzip", action="store_true", help="compress output, record by record")
 parser.add_option("-D", "--decode_http", dest="decode_http", action="store_true", help="decode http messages (strip chunks, gzip)")
 parser.add_option("-L", "--log-level", dest="log_level")
+parser.add_option("-S", "--strip-404s", dest="strip_404s", action="store_true", help="strip out 404 request/response pairs, but do leave them in the wget log")
 parser.add_option("--wget-chunk-fix", dest="wget_workaround", action="store_true", help="skip transfer-encoding headers in http records, when decoding them (-D)")
 
 parser.set_defaults(output_directory=None, limit=None, log_level="info", gzip=False, decode_http=False, wget_workaround=False)
@@ -33,7 +31,7 @@ parser.set_defaults(output_directory=None, limit=None, log_level="info", gzip=Fa
 
 WGET_IGNORE_HEADERS = ['Transfer-Encoding']
 
-def process(record, out, options):
+def process(record, previous_record, out, options):
 	ignore_headers = WGET_IGNORE_HEADERS if options.wget_workaround else ()
 	if options.decode_http:
 		if record.type == WarcRecord.RESPONSE:
@@ -50,6 +48,7 @@ def process(record, out, options):
 			if message:
 				leftover = message.feed(content)
 				message.close()
+				##print "Code", message.header.code
 				if not leftover and message.complete():
 					content = message.get_decoded_message()
 					record.content = content_type, content
@@ -61,25 +60,56 @@ def process(record, out, options):
 						error.append("incomplete message (at %s, %s)"%(message.mode, message.header.mode))
 					print >> sys.stderr, 'errors decoding http in record', record.id, ",".join(error)
 
-	record.write_to(out, gzip=options.gzip)
+	if options.strip_404s:
+		# We don't write out a request until we confirm its associated response is not 404
+		if record.type == WarcRecord.REQUEST:
+			pass
+		elif record.type == WarcRecord.RESPONSE:
+			if message.header.code == 404:
+				# If 404, don't write out either the request or the response
+				pass
+			else:
+				if previous_record is None:
+					raise RuntimeError("Need to write out previous record as well, but it isn't present")
+				if previous_record.type != WarcRecord.REQUEST:
+					raise RuntimeError("Expected previous record to be a "
+						"WarcRecord.REQUEST, was a %r" % (previous_record.type,))
+				# Note that if a request is made multiple times, we will only write out the last
+				# attempt at it.
+				previous_record.write_to(out, gzip=options.gzip)
+				record.write_to(out, gzip=options.gzip)
+		else: # metadata
+			record.write_to(out, gzip=options.gzip)
+	else:
+		record.write_to(out, gzip=options.gzip)
 
 
 def main(argv):
 	(options, input_files) = parser.parse_args(args=argv[1:])
 
+	if options.strip_404s and not options.decode_http:
+		raise RuntimeError("--strip-404s requires --decode_http")
+
 	with open(options.output, "wb") as out:
 		if len(input_files) < 1:
-			fh = WarcRecord.open_archive(file_handle=sys.stdin, gzip=None)
-
-			for record in fh:
-				process(record, out, options)
+			fh = WarcRecord.open_archive(file_handle=sys.stdin, gzip=None, mode="rb")
+			try:
+				previous_record = None
+				for record in fh:
+					process(record, previous_record, out, options)
+					previous_record = record
+			finally:
+				fh.close()
 		else:
 			for name in input_files:
-				fh = WarcRecord.open_archive(name, gzip="auto")
-				for record in fh:
-					process(record, out, options)
-
-				fh.close()
+				previous_record = None
+				fh = WarcRecord.open_archive(name, gzip="auto", mode="rb")
+				try:
+					for record in fh:
+						process(record, previous_record, out, options)
+						previous_record = record
+				finally:
+					fh.close()
 
 	return 0
 

@@ -172,7 +172,7 @@ if not WGET_LUA:
 #
 # Update this each time you make a non-cosmetic change.
 # It will be added to the WARC files and reported to the tracker.
-VERSION = "20130611.03"
+VERSION = "20130612.01"
 
 
 ###########################################################################
@@ -238,6 +238,7 @@ class CookWARC(ExternalProcess):
 			os.path.join(PIPELINE_DIR, "warc2warc_greader.py"),
 			"--gzip",
 			"--decode_http",
+			"--strip-404s",
 			"--output", ItemInterpolation("%(data_dir)s/%(warc_file_base)s.cooked.warc.gz"),
 			ItemInterpolation("%(data_dir)s/%(warc_file_base)s.warc.gz")
 		]
