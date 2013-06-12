@@ -172,7 +172,7 @@ if not WGET_LUA:
 #
 # Update this each time you make a non-cosmetic change.
 # It will be added to the WARC files and reported to the tracker.
-VERSION = "20130612.02"
+VERSION = "20130612.03"
 
 
 ###########################################################################
@@ -317,6 +317,15 @@ pipeline = Pipeline(
 		stdin_data_function=(lambda item: "\n".join(u.encode("utf-8") for u in item["task_urls"]) + "\n"),
 	),
 
+	# remove the temporary files, move the warc file from
+	# item["item_dir"] to item["data_dir"]
+	MoveFiles(),
+
+	# create a .cooked.warc.gz based on the .warc.gz.  The cooked WARC has
+	# gunzipped HTTP responses.  Note that the .gz compression on the WARC
+	# itself remains.
+	CookWARC(),
+
 	# this will set the item["stats"] string that is sent to the tracker (see below)
 	PrepareStatsForTracker(
 		# there are a few normal values that need to be sent
@@ -326,19 +335,10 @@ pipeline = Pipeline(
 		file_groups={
 			# there can be multiple groups with multiple files
 			# file sizes are measured per group
-			"data": [ItemInterpolation("%(item_dir)s/%(warc_file_base)s.warc.gz")]
+			"data": [ItemInterpolation("%(data_dir)s/%(warc_file_base)s.cooked.warc.gz")]
 		},
-		id_function=(lambda item: {"ua": item["user_agent"] })
+		id_function=(lambda item: {"ua": item["user_agent"]})
 	),
-
-	# remove the temporary files, move the warc file from
-	# item["item_dir"] to item["data_dir"]
-	MoveFiles(),
-
-	# create a .cooked.warc.gz based on the .warc.gz.  The cooked WARC has
-	# gunzipped HTTP responses.  Note that the .gz compression on the WARC
-	# itself remains.
-	CookWARC(),
 
 	# there can be multiple items in the pipeline, but this wrapper ensures
 	# that there is only one item uploading at a time
