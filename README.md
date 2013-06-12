@@ -28,7 +28,7 @@ To run this outside the warrior:
     ./get-wget-lua.sh
     
     # Start downloading with:
-    screen ~/.local/bin/run-pipeline --concurrent 3 pipeline.py YOURNICKNAME
+    screen ~/.local/bin/run-pipeline --disable-web-server --concurrent 3 pipeline.py YOURNICKNAME
 
 (Debian 6)
 
@@ -45,7 +45,7 @@ To run this outside the warrior:
     ./get-wget-lua.sh
 
     # Start downloading with:
-    screen ~/.local/bin/run-pipeline --concurrent 3 pipeline.py YOURNICKNAME
+    screen ~/.local/bin/run-pipeline --disable-web-server --concurrent 3 pipeline.py YOURNICKNAME
 
 (CentOS / RHEL / Amazon Linux)
 
@@ -61,7 +61,7 @@ To run this outside the warrior:
     ./get-wget-lua.sh
 
     # Start downloading with:
-    screen ~/.local/bin/run-pipeline --concurrent 3 pipeline.py YOURNICKNAME
+    screen ~/.local/bin/run-pipeline --disable-web-server --concurrent 3 pipeline.py YOURNICKNAME
 
 For more options, run:
 
