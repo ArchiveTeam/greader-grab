@@ -172,7 +172,7 @@ if not WGET_LUA:
 #
 # Update this each time you make a non-cosmetic change.
 # It will be added to the WARC files and reported to the tracker.
-VERSION = "20130612.01"
+VERSION = "20130612.02"
 
 
 ###########################################################################
@@ -264,7 +264,7 @@ href="http://tracker.archiveteam.org/greader/">Leaderboard</a></span></h2>
 try:
 	TRACKER_URL = os.environ["GREADER_TRACKER_URL"]
 except KeyError:
-	TRACKER_URL = "http://tracker.archiveteam.org/greader"
+	TRACKER_URL = "http://tracker-alt.dyn.ludios.net:9292/greader"
 
 
 ###########################################################################
