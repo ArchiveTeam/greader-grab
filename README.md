@@ -50,7 +50,7 @@ To run this outside the warrior:
 (CentOS / RHEL / Amazon Linux)
 
     sudo yum install lua lua-devel python-devel python-distribute git openssl-devel rsync gcc make screen
-    wget https://pypi.python.org/packages/source/p/pip/pip-1.3.1.tar.gz
+    wget --no-check-certificate https://pypi.python.org/packages/source/p/pip/pip-1.3.1.tar.gz
     tar -xzvf pip-1.3.1.tar.gz
     cd pip-1.3.1
     python setup.py install --user
