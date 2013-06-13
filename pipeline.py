@@ -43,13 +43,57 @@ from seesaw.config import NumberConfigValue, realize
 from seesaw.item import ItemInterpolation, ItemValue
 from seesaw.task import SimpleTask, LimitConcurrent
 from seesaw.pipeline import Pipeline
-from seesaw.externalprocess import ExternalProcess, WgetDownload
+from seesaw.externalprocess import ExternalProcess, WgetDownload, AsyncPopen
 from seesaw.tracker import TrackerRequest, UploadWithTracker, SendDoneToTracker, PrepareStatsForTracker
 
 # run-pipeline changes the cwd to the directory containing pipeline.py, then
 # execs the contents of pipeline.py.
 PIPELINE_DIR = os.getcwd()
 SSL_CERT_DIR = os.path.join(PIPELINE_DIR, "certs")
+
+
+## Begin AsyncPopen fix
+
+import pty
+import fcntl
+import subprocess
+import seesaw.externalprocess
+from tornado.ioloop import IOLoop, PeriodicCallback
+
+class AsyncPopenFixed(AsyncPopen):
+	"""
+	Start the wait_callback after setting self.pipe, to prevent an infinite spew of
+	"AttributeError: 'AsyncPopen' object has no attribute 'pipe'"
+	"""
+	def run(self):
+		self.ioloop = IOLoop.instance()
+		(master_fd, slave_fd) = pty.openpty()
+
+		# make stdout, stderr non-blocking
+		fcntl.fcntl(master_fd, fcntl.F_SETFL, fcntl.fcntl(master_fd, fcntl.F_GETFL) | os.O_NONBLOCK)
+
+		self.master_fd = master_fd
+		self.master = os.fdopen(master_fd)
+
+		# listen to stdout, stderr
+		self.ioloop.add_handler(master_fd, self._handle_subprocess_stdout, self.ioloop.READ)
+
+		slave = os.fdopen(slave_fd)
+		self.kwargs["stdout"] = slave
+		self.kwargs["stderr"] = slave
+		self.kwargs["close_fds"] = True
+		self.pipe = subprocess.Popen(*self.args, **self.kwargs)
+
+		self.stdin = self.pipe.stdin
+
+		# check for process exit
+		self.wait_callback = PeriodicCallback(self._wait_for_end, 250)
+		self.wait_callback.start()
+
+seesaw.externalprocess.AsyncPopen = AsyncPopenFixed
+
+## End AsyncPopen fix
+
 
 
 def gunzip_string(s):
@@ -172,7 +216,7 @@ if not WGET_LUA:
 #
 # Update this each time you make a non-cosmetic change.
 # It will be added to the WARC files and reported to the tracker.
-VERSION = "20130612.04"
+VERSION = "20130613.01"
 
 
 ###########################################################################
