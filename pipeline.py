@@ -216,7 +216,7 @@ if not WGET_LUA:
 #
 # Update this each time you make a non-cosmetic change.
 # It will be added to the WARC files and reported to the tracker.
-VERSION = "20130613.01"
+VERSION = "20130619.01"
 
 
 ###########################################################################
@@ -283,6 +283,7 @@ class CookWARC(ExternalProcess):
 			"--gzip",
 			"--decode_http",
 			"--strip-404s",
+			"--json-hrefs-file", ItemInterpolation("%(data_dir)s/%(warc_file_base)s.hrefs.bz2"),
 			"--output", ItemInterpolation("%(data_dir)s/%(warc_file_base)s.cooked.warc.gz"),
 			ItemInterpolation("%(data_dir)s/%(warc_file_base)s.warc.gz")
 		]
@@ -379,7 +380,8 @@ pipeline = Pipeline(
 		file_groups={
 			# there can be multiple groups with multiple files
 			# file sizes are measured per group
-			"data": [ItemInterpolation("%(data_dir)s/%(warc_file_base)s.cooked.warc.gz")]
+			"data": [ItemInterpolation("%(data_dir)s/%(warc_file_base)s.cooked.warc.gz")],
+			"hrefs": [ItemInterpolation("%(data_dir)s/%(warc_file_base)s.hrefs.bz2")]
 		},
 		id_function=(lambda item: {"ua": item["user_agent"]})
 	),
@@ -402,6 +404,7 @@ pipeline = Pipeline(
 			# this may include directory names.
 			# note: HTTP uploads will only upload the first file on this list
 			files=[
+				ItemInterpolation("%(data_dir)s/%(warc_file_base)s.hrefs.bz2"),
 				ItemInterpolation("%(data_dir)s/%(warc_file_base)s.cooked.warc.gz")
 			],
 			# the relative path for the rsync command
