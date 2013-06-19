@@ -60,7 +60,7 @@ def process(record, previous_record, out, options, found_hrefs):
 					content = message.get_decoded_message()
 
 					if found_hrefs is not None and message.header.code == 200:
-						found_hrefs.update(match[12:-3] for match in JSON_HREF_RE.findall(content))
+						found_hrefs.update(match[12:-2] for match in JSON_HREF_RE.findall(content))
 
 					record.content = content_type, content
 				else:
