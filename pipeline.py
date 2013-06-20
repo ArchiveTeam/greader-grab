@@ -216,7 +216,7 @@ if not WGET_LUA:
 #
 # Update this each time you make a non-cosmetic change.
 # It will be added to the WARC files and reported to the tracker.
-VERSION = "20130619.02"
+VERSION = "20130620.01"
 
 
 ###########################################################################
@@ -392,7 +392,7 @@ pipeline = Pipeline(
 	# the NumberConfigValue can be changed in the configuration panel
 	LimitConcurrent(
 		NumberConfigValue(
-			min=1, max=4, default="1", name="shared:rsync_threads", title="Rsync threads",
+			min=1, max=4, default="2", name="shared:rsync_threads", title="Rsync threads",
 			description="The maximum number of concurrent uploads."),
 		# this upload task asks the tracker for an upload target
 		# this can be HTTP or rsync and can be changed in the tracker admin panel
