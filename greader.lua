@@ -79,7 +79,7 @@ end
 
 wget.callbacks.httploop_result = function(url, err, http_stat)
   code = http_stat.statcode
-  if not (code == 200 or code == 404) then
+  if not (code == 200 or code == 404 or code == 414) then -- 414 is Request URI Too Long
     -- Long delay because people like to run with way too much concurrency
     delay = 1200
 
