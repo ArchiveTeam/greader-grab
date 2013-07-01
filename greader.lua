@@ -79,8 +79,8 @@ end
 
 wget.callbacks.httploop_result = function(url, err, http_stat)
   code = http_stat.statcode
-  if not (code == 200 or code == 404 or code == 414) then -- 414 is Request URI Too Long
-    delay = 60
+  if (code == 503) then -- Seen: 200, 404, 414 (Request URI Too Long), 400 (Bad Request)
+    delay = 120
 
     io.stdout:write("\nServer returned status "..code.."; this is probably a CAPTCHA page.\n")
     io.stdout:write("You may want to move to another IP.  Waiting for "..delay.." seconds and exiting...\n")
